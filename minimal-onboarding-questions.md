@@ -43,7 +43,7 @@ Solidity                         1             15             45             54
 
 ## Language files blank comment code
 
-## Solidity 1 15 45 54
+## Solidity
 
 - nSLOC: 54
 
