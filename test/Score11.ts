@@ -66,9 +66,7 @@ describe("SCORE11", function () {
     it("Should set the maxTotalSupply to the 1 Billion", async function () {
       const { token, pauser, owner } = await loadFixture(deployScore11Fixture);
 
-      expect(await token.maxTotalSupply()).to.equal(
-        ethers.parseEther("1000000000")
-      );
+      expect(await token.maxSupply()).to.equal(ethers.parseEther("1000000000"));
     });
 
     it("Should set the initial total supply to 1 Billion", async function () {
