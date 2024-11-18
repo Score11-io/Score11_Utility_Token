@@ -32,7 +32,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 ///      - ERC20Pausable: Enables pausing of token transfers
 ///      - AccessControl: Role-based access management
 ///      - ERC20Permit: Permit-based approvals
-contract Score11 is
+contract SCORE11 is
     ERC20,
     ERC20Burnable,
     ERC20Pausable,
@@ -41,7 +41,7 @@ contract Score11 is
 {
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
-    uint256 public maxTotalSupply;
+    uint256 public maxTotalSupply = 1000000000 * 10 ** decimals();
 
     event EmergencyWithdraw(address token, address recipient, uint256 amount);
 
@@ -49,17 +49,15 @@ contract Score11 is
     /// @param defaultAdmin Address assigned the DEFAULT_ADMIN_ROLE.
     /// @param owner Address receiving the initial max token supply.
     /// @param pauser Address granted the PAUSER_ROLE.
-    /// @param maxSupply_ Maximum total supply of the token.
+    /// @dev Mints the max token supply to the owner.
     constructor(
         address defaultAdmin,
         address owner,
-        address pauser,
-        uint256 maxSupply_
-    ) ERC20("Score11", "S11") ERC20Permit("Score11") {
-        maxTotalSupply = maxSupply_;
+        address pauser
+    ) ERC20("SCORE11", "SCR") ERC20Permit("SCORE11") {
         _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin);
         _grantRole(PAUSER_ROLE, pauser);
-        _mint(owner, maxSupply_);
+        _mint(owner, maxTotalSupply);
     }
 
     /// @notice Pauses all token transfers.

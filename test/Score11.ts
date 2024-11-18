@@ -3,17 +3,16 @@ import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 import { expect } from "chai";
 import hre, { ethers, upgrades } from "hardhat";
 
-describe("Score11", function () {
+describe("SCORE11", function () {
   async function deployScore11Fixture() {
     const [owner, buyer, defaultAdmin, pauser, anotherAccount] =
       await hre.ethers.getSigners();
 
-    const Token = await hre.ethers.getContractFactory("Score11");
+    const Token = await hre.ethers.getContractFactory("SCORE11");
     const token = await Token.deploy(
       defaultAdmin.address,
       owner.address,
-      pauser.address,
-      ethers.parseEther("3000000")
+      pauser.address
     );
 
     return {
@@ -32,15 +31,17 @@ describe("Score11", function () {
         deployScore11Fixture
       );
 
-      expect(await token.name()).to.equal("Score11");
-      expect(await token.symbol()).to.equal("S11");
+      expect(await token.name()).to.equal("SCORE11");
+      expect(await token.symbol()).to.equal("SCR");
       expect(await token.decimals()).to.equal(18);
-      expect(await token.totalSupply()).to.equal(ethers.parseEther("3000000"));
+      expect(await token.totalSupply()).to.equal(
+        ethers.parseEther("1000000000")
+      );
       expect(await token.maxTotalSupply()).to.equal(
-        ethers.parseEther("3000000")
+        ethers.parseEther("1000000000")
       );
       expect(await token.balanceOf(owner.address)).to.equal(
-        ethers.parseEther("3000000")
+        ethers.parseEther("1000000000")
       );
       expect(
         await token.hasRole(
@@ -281,7 +282,7 @@ describe("Score11", function () {
 
       await token.connect(owner).burn(ethers.parseEther("100"));
       expect(await token.balanceOf(owner.address)).to.equal(
-        ethers.parseEther("2999900")
+        ethers.parseEther("999999900")
       );
     });
 
