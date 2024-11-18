@@ -293,6 +293,17 @@ describe("SCORE11", function () {
         token.connect(buyer).burn(ethers.parseEther("1000"))
       ).to.be.revertedWithCustomError(token, "ERC20InsufficientBalance");
     });
+
+    it("Should not allow burning when paused", async function () {
+      const { token, pauser, owner } = await loadFixture(deployScore11Fixture);
+
+      await token.connect(pauser).pause();
+      expect(await token.paused()).to.be.true;
+
+      await expect(
+        token.connect(owner).burn(ethers.parseEther("100"))
+      ).to.be.revertedWithCustomError(token, "EnforcedPause");
+    });
   });
 
   describe("Emergency Withdraw", function () {
