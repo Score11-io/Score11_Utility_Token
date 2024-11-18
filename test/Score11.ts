@@ -1,4 +1,7 @@
-import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import {
+  time,
+  loadFixture,
+} from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 import { expect } from "chai";
 import hre, { ethers, upgrades } from "hardhat";
@@ -607,6 +610,248 @@ describe("SCORE11", function () {
         token,
         "AccessControlUnauthorizedAccount"
       );
+    });
+  });
+
+  describe("ERC20 Permit", function () {
+    it("Should allow permit-based approvals", async function () {
+      const { token, owner, buyer, anotherAccount } = await loadFixture(
+        deployScore11Fixture
+      );
+
+      const nonce = await token.nonces(buyer.address);
+      const deadline = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
+
+      const domain = {
+        name: await token.name(),
+        version: "1",
+        chainId: await buyer.provider
+          .getNetwork()
+          .then((network) => network.chainId),
+        verifyingContract: token.target,
+      };
+
+      const types = {
+        Permit: [
+          { name: "owner", type: "address" },
+          { name: "spender", type: "address" },
+          { name: "value", type: "uint256" },
+          { name: "nonce", type: "uint256" },
+          { name: "deadline", type: "uint256" },
+        ],
+      };
+
+      const value = ethers.parseEther("100");
+
+      const signature = await buyer.signTypedData(domain, types, {
+        owner: buyer.address,
+        spender: anotherAccount.address,
+        value: value,
+        nonce: nonce,
+        deadline: deadline,
+      });
+
+      const Signature = ethers.Signature.from(signature);
+
+      const v = Signature.v;
+      const r = Signature.r;
+      const s = Signature.s;
+
+      await token.permit(
+        buyer.address,
+        anotherAccount.address,
+        value,
+        deadline,
+        v,
+        r,
+        s
+      );
+
+      expect(
+        await token.allowance(buyer.address, anotherAccount.address)
+      ).to.equal(value);
+    });
+
+    it("Should prevent replay attacks", async function () {
+      const { token, anotherAccount, buyer } = await loadFixture(
+        deployScore11Fixture
+      );
+
+      const nonce = await token.nonces(buyer.address);
+      const deadline = Math.floor(Date.now() / 1000) + 3600;
+
+      const domain = {
+        name: await token.name(),
+        version: "1",
+        chainId: await buyer.provider
+          .getNetwork()
+          .then((network) => network.chainId),
+        verifyingContract: token.target,
+      };
+
+      const types = {
+        Permit: [
+          { name: "owner", type: "address" },
+          { name: "spender", type: "address" },
+          { name: "value", type: "uint256" },
+          { name: "nonce", type: "uint256" },
+          { name: "deadline", type: "uint256" },
+        ],
+      };
+
+      const value = ethers.parseEther("100");
+
+      const signature = await buyer.signTypedData(domain, types, {
+        owner: buyer.address,
+        spender: anotherAccount.address,
+        value: value,
+        nonce: nonce,
+        deadline: deadline,
+      });
+
+      const Signature = ethers.Signature.from(signature);
+
+      const v = Signature.v;
+      const r = Signature.r;
+      const s = Signature.s;
+
+      await token.permit(
+        buyer.address,
+        anotherAccount.address,
+        value,
+        deadline,
+        v,
+        r,
+        s
+      );
+
+      // it should revert if the same signature is used again
+
+      await expect(
+        token.permit(
+          buyer.address,
+          anotherAccount.address,
+          value,
+          deadline,
+          v,
+          r,
+          s
+        )
+      ).to.be.revertedWithCustomError(token, "ERC2612InvalidSigner");
+    });
+
+    it("Should prevent approvals after deadline", async function () {
+      const { token, anotherAccount, buyer } = await loadFixture(
+        deployScore11Fixture
+      );
+
+      const nonce = await token.nonces(buyer.address);
+      const deadline = Math.floor(Date.now() / 1000); // 1 second ago
+
+      const domain = {
+        name: await token.name(),
+        version: "1",
+        chainId: await buyer.provider
+          .getNetwork()
+          .then((network) => network.chainId),
+        verifyingContract: token.target,
+      };
+
+      const types = {
+        Permit: [
+          { name: "owner", type: "address" },
+          { name: "spender", type: "address" },
+          { name: "value", type: "uint256" },
+          { name: "nonce", type: "uint256" },
+          { name: "deadline", type: "uint256" },
+        ],
+      };
+
+      const value = ethers.parseEther("100");
+
+      const signature = await buyer.signTypedData(domain, types, {
+        owner: buyer.address,
+        spender: anotherAccount.address,
+        value: value,
+        nonce: nonce,
+        deadline: deadline,
+      });
+
+      const Signature = ethers.Signature.from(signature);
+
+      const v = Signature.v;
+      const r = Signature.r;
+      const s = Signature.s;
+
+      await time.increase(4000);
+
+      await expect(
+        token.permit(
+          buyer.address,
+          anotherAccount.address,
+          value,
+          deadline,
+          v,
+          r,
+          s
+        )
+      ).to.be.revertedWithCustomError(token, "ERC2612ExpiredSignature");
+    });
+
+    it("Should prevent approvals with invalid signatures", async function () {
+      const { token, anotherAccount, buyer, owner } = await loadFixture(
+        deployScore11Fixture
+      );
+
+      const nonce = await token.nonces(buyer.address);
+      const deadline = Math.floor(Date.now() / 1000) + 3600;
+
+      const domain = {
+        name: await token.name(),
+        version: "1",
+        chainId: await buyer.provider
+          .getNetwork()
+          .then((network) => network.chainId),
+        verifyingContract: token.target,
+      };
+
+      const types = {
+        Permit: [
+          { name: "owner", type: "address" },
+          { name: "spender", type: "address" },
+          { name: "value", type: "uint256" },
+          { name: "nonce", type: "uint256" },
+          { name: "deadline", type: "uint256" },
+        ],
+      };
+
+      const value = ethers.parseEther("100");
+
+      const signature = await owner.signTypedData(domain, types, {
+        owner: buyer.address,
+        spender: anotherAccount.address,
+        value: value,
+        nonce: nonce,
+        deadline: deadline,
+      });
+
+      const Signature = ethers.Signature.from(signature);
+
+      const v = Signature.v;
+      const r = Signature.r;
+      const s = Signature.s;
+
+      await expect(
+        token.permit(
+          buyer.address,
+          anotherAccount.address,
+          value,
+          deadline,
+          v,
+          r,
+          s
+        )
+      ).to.be.revertedWithCustomError(token, "ERC2612InvalidSigner");
     });
   });
 });
