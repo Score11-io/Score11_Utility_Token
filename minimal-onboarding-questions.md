@@ -24,6 +24,27 @@ The SCORE11 token contract is an ERC20 token with additional functionalities suc
 
 # Stats
 
+```sh
+npm i cloc
+```
+
+```sh
+cloc ./contracts/Score11.sol
+```
+
+```sh
+Result for the above command
+-------------------------------------------------------------------------------
+Language                     files          blank        comment           code
+-------------------------------------------------------------------------------
+Solidity                         1             15             45             54
+-------------------------------------------------------------------------------
+```
+
+## Language files blank comment code
+
+## Solidity 1 15 45 54
+
 - nSLOC: 54
 
 # Setup
